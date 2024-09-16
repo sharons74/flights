@@ -35,6 +35,30 @@ class TestFlightApp(unittest.TestCase):
         # Check that the flights are sorted by arrival time
         self.assertEqual(list(processed_df['flight ID']), ['C23', 'A12', 'B15', 'A14', 'C124'])
 
+class TestFlightSuccessLimit(unittest.TestCase):
+
+    def test_21st_flight_fails(self):
+        # Create a DataFrame with 20 successful flights (each with at least 180 minutes of duration)
+        data = {
+            'flight ID': [f'F{i}' for i in range(1, 21)],
+            'Arrival': ['08:00'] * 20,  # All flights arrive at 08:00
+            'Departure': ['11:00'] * 20,  # All flights depart at 11:00 (3 hours later, i.e., 180 mins)
+            'success': [''] * 20  # Initially empty success column
+        }
+        df = pd.DataFrame(data)
+
+        # Now, add the 21st flight, which should meet the time condition but fail due to success limit
+        df.loc[20] = ['F21', '09:00', '12:00', '']  # Flight duration is 3 hours (180 minutes)
+
+        # Calculate success for all flights
+        processed_df = calculate_success(df)
+
+        # Verify that the first 20 flights are successful
+        for i in range(20):
+            self.assertEqual(processed_df.at[i, 'success'], 'success')
+
+        # Verify that the 21st flight fails
+        self.assertEqual(processed_df.at[20, 'success'], 'fail')
 
 class TestFlightAPI(unittest.TestCase):
 
